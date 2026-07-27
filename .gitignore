@@ -1,0 +1,15 @@
+plots/hybrid_network/*
+!plots/hybrid_network/.gitkeep
+plots/big_cherry/*
+!plots/big_cherry/.gitkeep
+plots/base_tree/*
+!plots/base_tree/.gitkeep
+
+venv/
+martin/
+ivan/
+dennis/
+test.py
+.DS_Store
+src/__pycache__/
+utils/__pycache__/
