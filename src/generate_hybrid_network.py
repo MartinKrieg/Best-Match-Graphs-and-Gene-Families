@@ -5,6 +5,9 @@ from utils import visualizeGraph
 def generateHybridNetwork(geneTree : nx.DiGraph, rootID: int, num_hybridizations, geneColors):
     network = geneTree.copy()
 
+    if len(network.edges()) < 2:
+        raise ValueError("The input network must have at least two edges to perform hybridization.")
+
     successful_events = 0
     attempts = 0
     max_attempts = num_hybridizations * 10
@@ -13,10 +16,6 @@ def generateHybridNetwork(geneTree : nx.DiGraph, rootID: int, num_hybridizations
     while successful_events < num_hybridizations and attempts < max_attempts:
         attempts += 1
         edges = list(network.edges())
-
-        if len(edges) < 2:
-            print("Not enough edges left to hybridize.")
-            break
 
         # 1. Randomly select two distinct edges in the network
         e1, e2 = random.sample(edges, 2)
