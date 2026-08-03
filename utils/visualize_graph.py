@@ -2,17 +2,6 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 
-
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
-import networkx as nx
-
-
-import matplotlib.patches as mpatches
-import matplotlib.pyplot as plt
-import networkx as nx
-
-
 def visualizeGraph(G, title, root_id, geneColors):
     """Plots a DAG/phylogenetic network with an optimized top-to-bottom hierarchy
 
