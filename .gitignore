@@ -6,9 +6,6 @@ plots/base_tree/*
 !plots/base_tree/.gitkeep
 
 venv/
-martin/
-ivan/
-dennis/
 test.py
 .DS_Store
 src/__pycache__/
