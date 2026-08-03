@@ -3,15 +3,16 @@ from datetime import datetime
 from pathlib import Path
 import networkx as nx
 from asymmetree.visualization.tree_vis import visualize, assign_colors
+from tralda.datastructures import Tree
 
 
-def generateGeneTree(numLeaves: int) -> tuple[nx.DiGraph, int]:
-    print(f"-> Generating base tree with {numLeaves} leaves .")
+def generateGeneTree(numSpecies: int) -> tuple[nx.DiGraph, Tree, int, dict]:
+    print(f"-> Generating species tree with {numSpecies} species .")
     current_date = datetime.now().strftime("%Y-%m-%d")
     save_path = Path(f"./plots/base_tree/genetree_{current_date}.png")
 
     speciesTree = te.species_tree_n_age(
-        n=numLeaves,
+        n=numSpecies,
         age=1.0,
         #model="BDP",
         #innovation=True,

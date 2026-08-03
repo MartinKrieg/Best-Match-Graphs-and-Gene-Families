@@ -4,15 +4,15 @@ import argparse
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--nl", type=int, help="Number of leaves in gene tree")
+    parser.add_argument("--ns", type=int, help="Number of species")
     parser.add_argument("--nh", type=int, help="Number of hybridizations")
     args = parser.parse_args()
 
-    numberGeneTreeLeaves = args.nl
+    numberSpecies = args.ns
     numberHybridizations = args.nh
 
     # Hybridization
-    nxGeneTree, geneTree, rootID, geneColors = generateGeneTree(numberGeneTreeLeaves)
+    nxGeneTree, geneTree, rootID, geneColors = generateGeneTree(numberSpecies)
     generateHybridNetwork(nxGeneTree, rootID, numberHybridizations, geneColors)
     
     # BigCherry

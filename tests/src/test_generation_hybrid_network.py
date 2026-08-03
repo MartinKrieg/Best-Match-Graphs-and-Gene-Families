@@ -51,7 +51,7 @@ class TestGenerationHybridNetwork:
         nodes=st.integers(min_value=3, max_value=100)
     )
     def test_hybridization_increases_edges_invariant(self, num_hybridizations, nodes):
-        gene_tree = generateGeneTree(numLeaves=nodes)
+        gene_tree = generateGeneTree(numSpecies=nodes)
         nx_gene_tree, _, root_id, gene_colors = gene_tree
         edges_before = len(nx_gene_tree.edges())
         hybridized_network, _ = generateHybridNetwork(
@@ -69,7 +69,7 @@ class TestGenerationHybridNetwork:
         nodes=st.integers(min_value=3, max_value=100)
     )
     def test_hybridization_increases_vertices_invariant(self, num_hybridizations, nodes):
-        gene_tree = generateGeneTree(numLeaves=nodes)
+        gene_tree = generateGeneTree(numSpecies=nodes)
         nx_gene_tree, _, root_id, gene_colors = gene_tree
         vertices_before = len(nx_gene_tree.nodes())
         hybridized_network, _ = generateHybridNetwork(

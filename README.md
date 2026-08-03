@@ -2,4 +2,4 @@
 Project for University Course: Advanced Methods in Bioinformatics
 
 ## Usage
-`python main.py --nl <number_of_leaves> --nh <number_of_hybridizations>`
+`python main.py --ns <number_of_species> --nh <number_of_hybridizations>`
