@@ -29,7 +29,7 @@ class TestBicCherryNetwork:
             simple_network,
             rootID="1",
             num_hybridizations=1,
-            geneColors=None,
+            geneColors={},
         )
         assert root_id == "1"
         assert len(network.edges()) >= len(simple_network.edges())
