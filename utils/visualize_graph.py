@@ -160,20 +160,19 @@ def visualizeHierarchicalNetwork(N, title, root_id, geneColors):
     generations = list(nx.topological_generations(N))
     num_layers = len(generations)
 
-    # Positionen berechnen
+    # PHYLOGENETISCHER FIX: Alle Blätter (out_degree == 0) auf die unterste Ebene (y=0) zwingen.
+    # Sie teilen sich eine gemeinsame Reihe, damit Blätter aus verschiedenen
+    # topologischen Ebenen nicht auf derselben x-Position landen.
+    leaves = sorted((n for n in N.nodes() if N.out_degree(n) == 0), key=str)
+    for i, node in enumerate(leaves):
+        pos[node] = ((i + 0.5) / len(leaves), 0.0)
+
+    # Innere Knoten proportional zu ihrer topologischen Tiefe verteilen
     for depth, layer in enumerate(generations):
-        nodes_in_layer = sorted(list(layer), key=lambda n: str(n))
-        num_nodes = len(nodes_in_layer)
-        for i, node in enumerate(nodes_in_layer):
-            x = (i + 0.5) / num_nodes
-
-            # PHYLOGENETISCHER FIX: Alle Blätter (out_degree == 0) auf die unterste Ebene (y=0) zwingen
-            if N.out_degree(node) == 0:
-                y = 0.0
-            else:
-                # Innere Knoten proportional zu ihrer topologischen Tiefe verteilen
-                y = 1.0 - (depth / (num_layers - 1)) if num_layers > 1 else 0.5
-
+        inner_nodes = sorted((n for n in layer if N.out_degree(n) > 0), key=str)
+        for i, node in enumerate(inner_nodes):
+            x = (i + 0.5) / len(inner_nodes)
+            y = 1.0 - (depth / (num_layers - 1)) if num_layers > 1 else 0.5
             pos[node] = (x, y)
 
     # Knotenfarben bestimmen

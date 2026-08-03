@@ -1,5 +1,6 @@
 from utils import generateGeneTree, generateBmg, visualizeHierarchicalNetwork
 from src import generateHybridNetwork, buildBaseBigCherry, extendBicCherryNetwork, extendBicCherryNetworkEdgeRestricted
+from src import leastResolvedTree, explainsBmg, toNetwork
 import argparse
 
 if __name__ == "__main__":
@@ -17,6 +18,13 @@ if __name__ == "__main__":
     
     # BigCherry
     bmg, geneColors = generateBmg(geneTree, geneColors)
+
+    # Task 2a: the least resolved tree is the target of the network editing
+    lrt = leastResolvedTree(geneTree)
+    lrtNetwork, lrtRoot = toNetwork(lrt)
+    print(f"-> Least resolved tree explains the BMG: {explainsBmg(lrt, bmg)}")
+    visualizeHierarchicalNetwork(lrtNetwork, "Least_Resolved_Tree", lrtRoot, geneColors)
+
     base_network, root, base_parents = buildBaseBigCherry(bmg, geneColors)
     visualizeHierarchicalNetwork(base_network, "Unmodified_Base_BIC_Cherry_Network", root, geneColors)
     
