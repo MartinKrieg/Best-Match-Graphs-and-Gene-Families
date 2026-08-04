@@ -21,7 +21,7 @@ def generateGeneTree(numLeaves: int) -> tuple[nx.DiGraph, int]:
     )
     geneTree = te.dated_gene_tree(
         speciesTree,
-        #dupl_rate=0.7,
+        dupl_rate=0.7,
         #loss_rate=0.7,
         #hgt_rate=0.7,
         #gc_rate=0.7,
