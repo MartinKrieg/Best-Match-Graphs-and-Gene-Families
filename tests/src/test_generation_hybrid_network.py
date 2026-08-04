@@ -21,7 +21,6 @@ def network_too_few_edges():
     G.add_edges_from([("1", "2")])  # Only one edge
     return G
 
-
 class TestGenerationHybridNetwork:
     """Tests for generation of hybrid networks."""
 
@@ -44,6 +43,17 @@ class TestGenerationHybridNetwork:
                 num_hybridizations=1,
                 geneColors={"1": "red", "2": "blue"},
             )
+
+    def test_hybridization_with_zero_hybridizations(self, simple_network):
+        # Input = Output network
+        network, root_id = generateHybridNetwork(
+            simple_network,
+            rootID="1",
+            num_hybridizations=0,
+            geneColors={"1": "red", "2": "blue", "3": "green"},
+        )
+        # For zero hybridizations the network should be structurally identical
+        assert nx.is_isomorphic(network, simple_network)
 
     @settings(deadline=None)
     @given(
