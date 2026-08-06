@@ -31,6 +31,10 @@ def generateGeneTree(numSpecies: int) -> tuple[nx.DiGraph, Tree, int, dict]:
         transfer_distance_bias="inverse",
     )
 
+    # Best matches are only defined for the observable genes. Loss leaves carry an edge of the species tree as their 'reconc',
+    # so leaving them in would add spurious genes and spurious species to the BMG
+    geneTree = te.prune_losses(geneTree)
+
     _, gene_colors = assign_colors(speciesTree, geneTree)
     visualize(geneTree, color_dict=gene_colors, save_as=str(save_path))
 

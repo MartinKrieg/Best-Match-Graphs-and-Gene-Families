@@ -26,18 +26,20 @@ def leastResolvedTreeFromBmg(bmg: nx.DiGraph) -> Tree:
     """
     T*, obtained from the informative triples of the graph via BUILD.
 
+    A consistent triple set is necessary but not sufficient for the graph to be
+    a tree-BMG: BUILD can succeed on a color-sink-free non-BMG and return a
+    tree that does not explain it. The tree is therefore accepted only after
+    checking that its own best match graph is the input graph again.
+
     Raises
     ------
     ValueError
-        If the informative triples are inconsistent, i.e. if no tree explains
-        the graph at all.
+        If the graph is not a tree-BMG, i.e. if the informative triples are
+        inconsistent or the resulting tree does not explain the graph.
     """
-    lrt = best_matches.lrt_from_colored_graph(bmg)
+    lrt = best_matches.is_bmg(bmg)
     if lrt is None:
-        raise ValueError(
-            "the informative triples are inconsistent, "
-            "the graph is not a tree-BMG"
-        )
+        raise ValueError("the graph is not a tree-BMG, no tree explains it")
     return lrt
 
 

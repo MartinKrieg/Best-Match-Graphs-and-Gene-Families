@@ -4,6 +4,7 @@ import asymmetree.treeevolve as te
 import networkx as nx
 import numpy as np
 import pytest
+from asymmetree.analysis import best_matches
 from tralda.datastructures import Tree, TreeNode
 
 from src.least_resolved_tree import (
@@ -43,6 +44,32 @@ def redundant_tree():
     parent.add_child(TreeNode(label="a2", reconc="A", dist=1.0))
     root.add_child(TreeNode(label="b", reconc="B", dist=1.0))
     return Tree(root)
+
+
+@pytest.fixture
+def color_sink_free_non_bmg():
+    """A color-sink-free graph that no tree explains.
+
+    a1 and a2 each have a single best match, which forces the triples
+    a1 b1|b2 and a2 b2|b1 and hence the tree ((a1, b1), (a2, b2)). That tree
+    does not produce the edges b1 -> a2 and b2 -> a1.
+    """
+    G = nx.DiGraph()
+    G.add_node("a1", color="A")
+    G.add_node("a2", color="A")
+    G.add_node("b1", color="B")
+    G.add_node("b2", color="B")
+    G.add_edges_from(
+        [
+            ("a1", "b1"),
+            ("a2", "b2"),
+            ("b1", "a1"),
+            ("b1", "a2"),
+            ("b2", "a1"),
+            ("b2", "a2"),
+        ]
+    )
+    return G
 
 
 class TestLeastResolvedTree:
@@ -99,34 +126,22 @@ class TestLeastResolvedTree:
 
         assert treesEqual(lrt, leastResolvedTree(lrt))
 
-    def test_non_bmg_is_not_explained_by_the_build_tree(self):
-        """A color-sink-free graph that no tree explains.
+    def test_non_bmg_is_rejected(self, color_sink_free_non_bmg):
+        with pytest.raises(ValueError, match="not a tree-BMG"):
+            leastResolvedTreeFromBmg(color_sink_free_non_bmg)
 
-        a1 and a2 each have a single best match, which forces the triples
-        a1 b1|b2 and a2 b2|b1 and hence the tree ((a1, b1), (a2, b2)). That
-        tree does not produce the edges b1 -> a2 and b2 -> a1, so BUILD
-        succeeding is not by itself proof that the graph is a BMG.
+    def test_consistent_triples_alone_do_not_prove_a_bmg(
+        self, color_sink_free_non_bmg
+    ):
+        """Why the rejection above cannot rely on BUILD alone.
+
+        BUILD succeeds on this graph, so a consistent triple set is not
+        sufficient; the tree it returns has to be checked against the graph.
         """
-        G = nx.DiGraph()
-        G.add_node("a1", color="A")
-        G.add_node("a2", color="A")
-        G.add_node("b1", color="B")
-        G.add_node("b2", color="B")
-        G.add_edges_from(
-            [
-                ("a1", "b1"),
-                ("a2", "b2"),
-                ("b1", "a1"),
-                ("b1", "a2"),
-                ("b2", "a1"),
-                ("b2", "a2"),
-            ]
-        )
-        lrt = leastResolvedTreeFromBmg(G)
+        build_tree = best_matches.lrt_from_colored_graph(color_sink_free_non_bmg)
 
-        # BUILD succeeds here, but the resulting tree does not explain G,
-        # which is what makes G a color-sink-free non-BMG.
-        assert not explainsBmg(lrt, G)
+        assert build_tree is not None
+        assert not explainsBmg(build_tree, color_sink_free_non_bmg)
 
 
 class TestToNetwork:

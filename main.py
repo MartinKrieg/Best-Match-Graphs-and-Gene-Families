@@ -16,10 +16,10 @@ if __name__ == "__main__":
     nxGeneTree, geneTree, rootID, geneColors = generateGeneTree(numberSpecies)
     generateHybridNetwork(nxGeneTree, rootID, numberHybridizations, geneColors)
     
-    # BigCherry
+    # BIC-Cherry
     bmg, geneColors = generateBmg(geneTree, geneColors)
 
-    # Task 2a: the least resolved tree is the target of the network editing
+    # Least resolved tree
     lrt = leastResolvedTree(geneTree)
     lrtNetwork, lrtRoot = toNetwork(lrt)
     print(f"-> Least resolved tree explains the BMG: {explainsBmg(lrt, bmg)}")
