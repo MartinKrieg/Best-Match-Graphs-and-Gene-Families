@@ -39,5 +39,34 @@ def generateGeneTree(numSpecies: int) -> tuple[nx.DiGraph, Tree, int, dict]:
     visualize(geneTree, color_dict=gene_colors, save_as=str(save_path))
 
     nxGeneTree, root_id = geneTree.to_nx()
+    print(f"Number of vertices: {nxGeneTree.number_of_nodes()}, Number of edges: {nxGeneTree.number_of_edges()}")
 
+    # TODO: Consider returning a small dataclass here if more tree variants or
+    # color mappings need to travel together in the future.
     return nxGeneTree, geneTree, root_id, gene_colors
+
+
+def mapLeafColorsToNxTree(nxTree: nx.DiGraph, geneColors: dict) -> dict:
+    """Map a leaf-color dictionary onto the NetworkX node IDs of a tree."""
+    mapped_colors = {}
+    for node in nxTree.nodes():
+        if nxTree.out_degree(node) != 0:
+            continue
+
+        if node in geneColors:
+            mapped_colors[node] = geneColors[node]
+            continue
+
+        label = nxTree.nodes[node].get("label")
+        if label in geneColors:
+            mapped_colors[node] = geneColors[label]
+            continue
+
+        reconc = nxTree.nodes[node].get("reconc")
+        if reconc in geneColors:
+            mapped_colors[node] = geneColors[reconc]
+            continue
+
+        raise ValueError(f"no color assigned to the leaf {node}")
+
+    return mapped_colors
