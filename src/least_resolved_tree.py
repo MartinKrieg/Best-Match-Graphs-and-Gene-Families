@@ -5,22 +5,7 @@ Tree-BMGs of AsymmeTree gene trees and their least resolved trees
 import networkx as nx
 from asymmetree.analysis import best_matches
 from tralda.datastructures import Tree
-
-
-def treeBmg(geneTree: Tree) -> nx.DiGraph:
-    """
-    The best match graph explained by a leaf-colored gene tree.
-
-    The nodes are the leaf labels and carry their species as the 'color'
-    attribute.
-    """
-    return best_matches.bmg_from_tree(geneTree)
-
-
-def leastResolvedTree(geneTree: Tree) -> Tree:
-    """T*, obtained by contracting the redundant edges of the gene tree."""
-    return best_matches.lrt_from_tree(geneTree)
-
+from utils import generateTreeBmg, generateLeastResolvedTree
 
 def leastResolvedTreeFromBmg(bmg: nx.DiGraph) -> Tree:
     """
@@ -45,7 +30,7 @@ def leastResolvedTreeFromBmg(bmg: nx.DiGraph) -> Tree:
 
 def buildTarget(geneTree: Tree) -> tuple[nx.DiGraph, Tree]:
     """Task 2a: the tree-BMG of a gene tree together with its target T*."""
-    return treeBmg(geneTree), leastResolvedTree(geneTree)
+    return generateTreeBmg(geneTree), generateLeastResolvedTree(geneTree)
 
 
 def treeClusters(tree: Tree) -> set:
@@ -67,7 +52,7 @@ def treesEqual(first: Tree, second: Tree) -> bool:
 
 def explainsBmg(tree: Tree, bmg: nx.DiGraph) -> bool:
     """Whether the best match graph of the tree is exactly the given graph."""
-    explained = treeBmg(tree)
+    explained = generateTreeBmg(tree)
     return set(explained.nodes()) == set(bmg.nodes()) and set(
         explained.edges()
     ) == set(bmg.edges())

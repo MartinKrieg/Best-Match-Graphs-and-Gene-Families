@@ -4,6 +4,8 @@ plots/big_cherry/*
 !plots/big_cherry/.gitkeep
 plots/base_tree/*
 !plots/base_tree/.gitkeep
+plots/least_resolved_tree/*
+!plots/least_resolved_tree/.gitkeep
 
 venv/
 test.py
