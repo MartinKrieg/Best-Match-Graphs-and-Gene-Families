@@ -10,7 +10,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src import generateHybridNetwork, buildBaseBigCherry, extendBicCherryNetworkEdgeRestricted, weakBestMatchGraph
+from src import generateHybridNetwork, buildBaseBigCherry, extendBicCherryNetworkEdgeRestricted, weakBestMatchGraph, extendBicCherryNetwork
 from utils import generateGeneTree, mapLeafColorsToNxTree
 import networkx as nx
 import numpy as np
@@ -87,9 +87,12 @@ while not found:
             base_bic_cherry, _, parents = buildBaseBigCherry(wBMG, gene_colors=geneColors)
             explaining_network = extendBicCherryNetworkEdgeRestricted(base_bic_cherry, parents, wBMG, gene_colors=geneColors)
             explaining_colors = mapLeafColorsToNxTree(explaining_network, geneColors)
+            explaining_network_unrestricted = extendBicCherryNetwork(base_bic_cherry, parents, wBMG, gene_colors=geneColors)
+            explaining_colors_unrestricted = mapLeafColorsToNxTree(explaining_network_unrestricted, geneColors)
 
             # 4th step: Compute the weak best match graph for the explaining network
             wBMG_explaining = weakBestMatchGraph(explaining_network, explaining_colors)
+            wBMG_explaining_unrestricted = weakBestMatchGraph(explaining_network_unrestricted, explaining_colors_unrestricted)
 
             isEqualGraphs = isEqual(wBMG, wBMG_explaining)
 
@@ -122,3 +125,6 @@ while not found:
                 )
 
                 print(f"Found mismatch for {num_species} species and {num_hybridizations} hybridizations. Graphs saved in {out_dir}/")
+                print(f"Testing for usual expansion of the explaining network...")
+
+                print(f"Unrestricted case works: {isEqual(wBMG, wBMG_explaining_unrestricted)}")
