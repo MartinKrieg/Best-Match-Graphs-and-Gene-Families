@@ -28,9 +28,19 @@ def leastResolvedTreeFromBmg(bmg: nx.DiGraph) -> Tree:
     return lrt
 
 
+def treeBmg(geneTree: Tree) -> nx.DiGraph:
+    """The best match graph explained by a leaf-colored gene tree."""
+    return generateTreeBmg(geneTree)
+
+
+def leastResolvedTree(geneTree: Tree) -> Tree:
+    """T*, obtained by contracting the redundant edges of the gene tree."""
+    return generateLeastResolvedTree(geneTree)
+
+
 def buildTarget(geneTree: Tree) -> tuple[nx.DiGraph, Tree]:
     """Task 2a: the tree-BMG of a gene tree together with its target T*."""
-    return generateTreeBmg(geneTree), generateLeastResolvedTree(geneTree)
+    return treeBmg(geneTree), leastResolvedTree(geneTree)
 
 
 def treeClusters(tree: Tree) -> set:
