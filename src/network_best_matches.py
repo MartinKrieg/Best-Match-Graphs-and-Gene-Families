@@ -161,6 +161,55 @@ def weakBestMatchGraph(
     return bestMatchGraphs(network, sigma=sigma, labels=labels)[1]
 
 
+def colorsFromGraph(graph: nx.DiGraph) -> dict:
+    """Read sigma off the 'color' vertex attribute of a colored graph.
+
+    That attribute is what asymmetree.analysis.best_matches.bmg_from_tree sets,
+    so a BMG already carries its own coloring and can hand it on to the
+    constructions that consume (G, sigma).
+    """
+    sigma = {}
+    for v in graph.nodes():
+        color = graph.nodes[v].get("color")
+        if color is None:
+            raise ValueError(f"vertex {v} has no 'color' attribute")
+        sigma[v] = _hashableColor(color)
+    return sigma
+
+
+def networkExplainsBmg(
+    network: nx.DiGraph, bmg: nx.DiGraph, sigma: dict = None, weak: bool = False
+) -> bool:
+    """Whether the (weak) best match graph of the network is exactly the graph.
+
+    The network counterpart of src.least_resolved_tree.explainsBmg and the
+    acceptance test for every construction that claims to explain (G, sigma).
+    The leaves of the network have to be the vertices of the graph, otherwise
+    the two are trivially different.
+
+    Parameters
+    ----------
+    network : nx.DiGraph
+        The candidate explanation.
+    bmg : nx.DiGraph
+        The graph to be explained. Its 'color' attributes supply sigma.
+    sigma : dict, optional
+        Leaf coloring, keyed by the leaves of the network. Defaults to the
+        coloring carried by the graph.
+    weak : bool
+        Compare the weak best match graph instead of the strict one.
+    """
+    if sigma is None:
+        sigma = colorsFromGraph(bmg)
+
+    strict, weakBmg = bestMatchGraphs(network, sigma=sigma)
+    explained = weakBmg if weak else strict
+
+    return set(explained.nodes()) == set(bmg.nodes()) and set(
+        explained.edges()
+    ) == set(bmg.edges())
+
+
 def _hashableColor(color):
     """Colors are used as dict keys, so arrays and lists become tuples."""
     if isinstance(color, np.ndarray):
