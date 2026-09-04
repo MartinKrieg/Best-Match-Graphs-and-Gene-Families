@@ -1,2 +1,2 @@
 from .visualize_graph import visualizeGraph, visualizeHierarchicalNetwork, visualizeBmg
-from .generate_tree import generateGeneTree, generateTreeBmg, generateLeastResolvedTree
+from .generate_tree import generateGeneTree, generateTreeBmg, generateNetworkBmg, generateLeastResolvedTree

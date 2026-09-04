@@ -2,6 +2,7 @@ from utils import generateGeneTree, generateTreeBmg, visualizeBmg, visualizeHier
 from src import generateHybridNetwork, buildBaseBigCherry, extendBicCherryNetwork, extendBicCherryNetworkEdgeRestricted
 from src import leastResolvedTree, explainsBmg, toNetwork
 from src import missingArcs, networkExplainsBmg
+from src import editingNetwork
 import argparse
 
 if __name__ == "__main__":

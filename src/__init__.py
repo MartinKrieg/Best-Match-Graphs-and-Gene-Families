@@ -28,3 +28,15 @@ from .network_best_matches import (
     minimalVertices,
     networkExplainsBmg,
 )
+
+from .editing_operations import(
+    editingNetwork, 
+    preserveNetworkLeaves,
+    checkBmgRelations,
+    _try_move_edge,
+    _try_contract,
+    pullingUpEditing,
+    pullingDownEditing,
+    removingRedundantVertices,
+    cleanUpDummyVertices,
+)
