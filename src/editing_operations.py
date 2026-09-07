@@ -138,7 +138,7 @@ def removingRedundantVertices(network: nx.DiGraph, originBmg: nx.DiGraph, origin
         # If nodes[1] fails, nodes[n] will fail, too and vice versa if it works.
         if not (preserveNetworkLeaves(original_leaves, network)
                 and checkBmgRelations(originBmg, generateNetworkBmg(network))):
-            network.clear()  # revert, in-place
+            network.clear()
             network.add_nodes_from(backup.nodes(data=True))
             network.add_edges_from(backup.edges(data=True))
         else:
