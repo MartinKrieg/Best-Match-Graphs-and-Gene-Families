@@ -1,5 +1,4 @@
 import networkx as nx
-from itertools import combinations
 from utils import generateNetworkBmg
 
 def preserveNetworkLeaves(original_leaves: set, network: nx.DiGraph) -> bool:
