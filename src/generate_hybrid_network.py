@@ -68,3 +68,5 @@ def generateHybridNetwork(geneTree : nx.DiGraph, rootID: int, num_hybridizations
         geneColors
     )
     return network, rootID
+
+# NOTE: Color for new vertices?
