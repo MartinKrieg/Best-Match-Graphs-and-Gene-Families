@@ -4,11 +4,17 @@ plots/big_cherry/*
 !plots/big_cherry/.gitkeep
 plots/base_tree/*
 !plots/base_tree/.gitkeep
+plots/least_resolved_tree/*
+!plots/least_resolved_tree/.gitkeep
+plots/edited_network/*
+!plots/edited_network/.gitkeep
 
 venv/
 test.py
 .DS_Store
+.vscode/
 src/__pycache__/
 utils/__pycache__/
 tests/__pycache__/
 tests/*/__pycache__/
+*/__pycache__/

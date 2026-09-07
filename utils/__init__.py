@@ -1,4 +1,2 @@
-from .generate_gene_tree import generateGeneTree
-from .generate_gene_tree import mapLeafColorsToNxTree
-from .visualize_graph import visualizeGraph, visualizeHierarchicalNetwork
-from .generate_bmg import generateBmg
+from .visualize_graph import visualizeGraph, visualizeHierarchicalNetwork, visualizeBmg
+from .generate_tree import generateGeneTree, generateTreeBmg, generateNetworkBmg, generateLeastResolvedTree
