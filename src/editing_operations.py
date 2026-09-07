@@ -25,7 +25,7 @@ def _try_move_edge(network: nx.DiGraph, u, v, new_u, new_v, originBmg, original_
         return False
         
     network.remove_edge(u, v)
-    network.add_edge(new_u, new_v)
+    network.add_edge(new_u, new_v) # Trivially would remove the edge just to add it back
 
     # 1. Cycle check
     if not nx.is_directed_acyclic_graph(network):
@@ -120,7 +120,7 @@ def removingRedundantVertices(network: nx.DiGraph, originBmg: nx.DiGraph, origin
     Removes ONE vertex sharing the exact same parents and children as another,
     if the BMG and leaf set are preserved. Returns True if a removal was made.
     '''
-    internal_nodes = [n for n in network.nodes() # TODO: Can the network construction lead to nodes with no parents or children? If so, this filter is wrong, as it would exclude them. Or: Is the definition that the there must be at least one parent and one child? If so, this is correct.
+    internal_nodes = [n for n in network.nodes() 
                       if network.in_degree(n) > 0 and network.out_degree(n) > 0]
 
     signatures = {}
