@@ -1,7 +1,7 @@
 import pytest
 import networkx as nx
 from src.generate_hybrid_network import generateHybridNetwork
-from utils.generate_gene_tree import generateGeneTree
+from utils import generateGeneTree
 from hypothesis import given, settings, strategies as st
 
 
