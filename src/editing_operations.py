@@ -120,7 +120,7 @@ def removingRedundantVertices(network: nx.DiGraph, originBmg: nx.DiGraph, origin
     Removes ONE vertex sharing the exact same parents and children as another,
     if the BMG and leaf set are preserved. Returns True if a removal was made.
     '''
-    internal_nodes = [n for n in network.nodes()
+    internal_nodes = [n for n in network.nodes() # TODO: Can the network construction lead to nodes with no parents or children? If so, this filter is wrong, as it would exclude them. Or: Is the definition that the there must be at least one parent and one child? If so, this is correct.
                       if network.in_degree(n) > 0 and network.out_degree(n) > 0]
 
     signatures = {}
@@ -136,10 +136,10 @@ def removingRedundantVertices(network: nx.DiGraph, originBmg: nx.DiGraph, origin
         backup = network.copy()
         network.remove_node(rn)
 
-        if not (nx.is_directed_acyclic_graph(network)
-                and preserveNetworkLeaves(original_leaves, network)
+        # If nodes[1] fails, nodes[n] will fail, too and vice versa if it works.
+        if not (preserveNetworkLeaves(original_leaves, network)
                 and checkBmgRelations(originBmg, generateNetworkBmg(network))):
-            network.clear()
+            network.clear()  # revert, in-place
             network.add_nodes_from(backup.nodes(data=True))
             network.add_edges_from(backup.edges(data=True))
         else:
