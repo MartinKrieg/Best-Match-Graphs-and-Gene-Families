@@ -2,164 +2,121 @@ graph [
   directed 1
   node [
     id 0
-    label "139964616547440"
+    label "140425681530032"
     event "D"
     reconc 0
     reconc 1
-    tstamp 0.7269749343331318
+    tstamp 0.6511211884829446
     transferred 0
     dist 0.0
   ]
   node [
     id 1
-    label "139964616546480"
-    event "D"
-    reconc 0
+    label "140425681524432"
+    event "S"
     reconc 1
-    tstamp 0.7253627462727456
+    tstamp 0.3896986410891322
     transferred 0
-    dist 0.0016121880603862104
+    dist 0.26142254739381243
     sibling_nr 0
   ]
   node [
     id 2
-    label "139964616549520"
-    event "S"
+    label "140425677118896"
+    event "D"
     reconc 1
-    tstamp 0.16430044432239033
+    reconc 2
+    tstamp 0.14843119276171615
     transferred 0
-    dist 0.5610623019503552
+    dist 0.24126744832741606
     sibling_nr 0
   ]
   node [
     id 3
-    label "139964616550480"
-    event "D"
-    reconc 1
-    reconc 2
-    tstamp 0.06809964855485093
-    transferred 0
-    dist 0.0962007957675394
-    sibling_nr 0
-  ]
-  node [
-    id 4
-    label "14"
-    event "S"
-    reconc 2
-    tstamp 0.0
-    transferred 0
-    dist 0.06809964855485093
-    sibling_nr 0
-    gene_color "[0.12156863 0.46666667 0.70588235 1.        ]"
-  ]
-  node [
-    id 5
-    label "15"
-    event "S"
-    reconc 2
-    tstamp 0.0
-    transferred 0
-    dist 0.06809964855485093
-    sibling_nr 1
-    gene_color "[0.12156863 0.46666667 0.70588235 1.        ]"
-  ]
-  node [
-    id 6
-    label "9"
-    event "S"
-    reconc 3
-    tstamp 0.0
-    transferred 0
-    dist 0.16430044432239033
-    sibling_nr 1
-    gene_color "[1.         0.49803922 0.05490196 1.        ]"
-  ]
-  node [
-    id 7
-    label "139964616552720"
-    event "S"
-    reconc 1
-    tstamp 0.16430044432239033
-    transferred 0
-    dist 0.5610623019503552
-    sibling_nr 1
-  ]
-  node [
-    id 8
     label "10"
     event "S"
     reconc 2
     tstamp 0.0
     transferred 0
-    dist 0.16430044432239033
+    dist 0.14843119276171615
+    sibling_nr 0
+    gene_color "[0.12156863 0.46666667 0.70588235 1.        ]"
+  ]
+  node [
+    id 4
+    label "11"
+    event "S"
+    reconc 2
+    tstamp 0.0
+    transferred 0
+    dist 0.14843119276171615
+    sibling_nr 1
+    gene_color "[0.12156863 0.46666667 0.70588235 1.        ]"
+  ]
+  node [
+    id 5
+    label "5"
+    event "S"
+    reconc 3
+    tstamp 0.0
+    transferred 0
+    dist 0.3896986410891322
+    sibling_nr 1
+    gene_color "[1.         0.49803922 0.05490196 1.        ]"
+  ]
+  node [
+    id 6
+    label "140425677119856"
+    event "S"
+    reconc 1
+    tstamp 0.3896986410891322
+    transferred 0
+    dist 0.26142254739381243
+    sibling_nr 1
+  ]
+  node [
+    id 7
+    label "140425677120016"
+    event "D"
+    reconc 1
+    reconc 2
+    tstamp 0.29699654710822654
+    transferred 0
+    dist 0.09270209398090568
+    sibling_nr 0
+  ]
+  node [
+    id 8
+    label "8"
+    event "S"
+    reconc 2
+    tstamp 0.0
+    transferred 0
+    dist 0.29699654710822654
     sibling_nr 0
     gene_color "[0.12156863 0.46666667 0.70588235 1.        ]"
   ]
   node [
     id 9
-    label "11"
-    event "S"
-    reconc 3
-    tstamp 0.0
-    transferred 0
-    dist 0.16430044432239033
-    sibling_nr 1
-    gene_color "[1.         0.49803922 0.05490196 1.        ]"
-  ]
-  node [
-    id 10
-    label "139964616553200"
-    event "S"
-    reconc 1
-    tstamp 0.16430044432239033
-    transferred 0
-    dist 0.5626744900107414
-    sibling_nr 1
-  ]
-  node [
-    id 11
-    label "139964616553360"
-    event "D"
-    reconc 1
-    reconc 3
-    tstamp 0.16362394952802006
-    transferred 0
-    dist 0.0006764947943702637
-    sibling_nr 0
-  ]
-  node [
-    id 12
-    label "12"
-    event "S"
-    reconc 3
-    tstamp 0.0
-    transferred 0
-    dist 0.16362394952802006
-    sibling_nr 0
-    gene_color "[1.         0.49803922 0.05490196 1.        ]"
-  ]
-  node [
-    id 13
-    label "13"
-    event "S"
-    reconc 3
-    tstamp 0.0
-    transferred 0
-    dist 0.16362394952802006
-    sibling_nr 1
-    gene_color "[1.         0.49803922 0.05490196 1.        ]"
-  ]
-  node [
-    id 14
-    label "6"
+    label "9"
     event "S"
     reconc 2
     tstamp 0.0
     transferred 0
-    dist 0.16430044432239033
+    dist 0.29699654710822654
     sibling_nr 1
     gene_color "[0.12156863 0.46666667 0.70588235 1.        ]"
+  ]
+  node [
+    id 10
+    label "7"
+    event "S"
+    reconc 3
+    tstamp 0.0
+    transferred 0
+    dist 0.3896986410891322
+    sibling_nr 1
+    gene_color "[1.         0.49803922 0.05490196 1.        ]"
   ]
   edge [
     source 0
@@ -167,7 +124,7 @@ graph [
   ]
   edge [
     source 0
-    target 10
+    target 6
   ]
   edge [
     source 1
@@ -175,7 +132,7 @@ graph [
   ]
   edge [
     source 1
-    target 7
+    target 5
   ]
   edge [
     source 2
@@ -183,15 +140,15 @@ graph [
   ]
   edge [
     source 2
-    target 6
-  ]
-  edge [
-    source 3
     target 4
   ]
   edge [
-    source 3
-    target 5
+    source 6
+    target 7
+  ]
+  edge [
+    source 6
+    target 10
   ]
   edge [
     source 7
@@ -200,21 +157,5 @@ graph [
   edge [
     source 7
     target 9
-  ]
-  edge [
-    source 10
-    target 11
-  ]
-  edge [
-    source 10
-    target 14
-  ]
-  edge [
-    source 11
-    target 12
-  ]
-  edge [
-    source 11
-    target 13
   ]
 ]
