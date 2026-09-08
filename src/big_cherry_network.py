@@ -67,7 +67,8 @@ def buildBaseBigCherry(best_match_graph, gene_colors):
     N = nx.DiGraph()
     root_id = "rho"
     N.add_node(root_id, type="root")
-    N.add_nodes_from(X)
+    # The leaf attributes carry the coloring, which the best match computation on the resulting network needs
+    N.add_nodes_from(best_match_graph.nodes(data=True))
     p_map = {}
 
     # Sonderfall: Genau 2 Knoten

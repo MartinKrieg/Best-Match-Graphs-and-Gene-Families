@@ -68,7 +68,7 @@ def computeLCA(vertices, ancestors: dict) -> set:
 
 
 def bestMatchGraphs(
-    network: nx.DiGraph, sigma: dict = None, labels: dict = None
+    network: nx.DiGraph, sigma: dict | None = None, labels: dict | None = None
 ) -> tuple[nx.DiGraph, nx.DiGraph]:
     """Compute the strict and the weak best match graph of (N, sigma).
 
@@ -148,14 +148,14 @@ def bestMatchGraphs(
 
 
 def bestMatchGraph(
-    network: nx.DiGraph, sigma: dict = None, labels: dict = None
+    network: nx.DiGraph, sigma: dict | None = None, labels: dict | None = None
 ) -> nx.DiGraph:
     """Compute the strict best match graph of (N, sigma)."""
     return bestMatchGraphs(network, sigma=sigma, labels=labels)[0]
 
 
 def weakBestMatchGraph(
-    network: nx.DiGraph, sigma: dict = None, labels: dict = None
+    network: nx.DiGraph, sigma: dict | None = None, labels: dict | None = None
 ) -> nx.DiGraph:
     """Compute the weak best match graph of (N, sigma)."""
     return bestMatchGraphs(network, sigma=sigma, labels=labels)[1]
@@ -178,7 +178,7 @@ def colorsFromGraph(graph: nx.DiGraph) -> dict:
 
 
 def networkExplainsBmg(
-    network: nx.DiGraph, bmg: nx.DiGraph, sigma: dict = None, weak: bool = False
+    network: nx.DiGraph, bmg: nx.DiGraph, sigma: dict | None = None, weak: bool = False
 ) -> bool:
     """Whether the (weak) best match graph of the network is exactly the graph.
 
@@ -219,14 +219,19 @@ def _hashableColor(color):
     return color
 
 
-def _resolveColors(network: nx.DiGraph, leaves: list, sigma: dict) -> dict:
+def _resolveColors(network: nx.DiGraph, leaves: list, sigma: dict | None) -> dict:
     if sigma is None:
         resolved = {}
         for x in leaves:
+            # Gene trees carry the species as 'reconc'; BMGs and the
+            # BIC-cherry networks derived from them use 'color'.
             color = network.nodes[x].get("reconc")
             if color is None:
+                color = network.nodes[x].get("color")
+            if color is None:
                 raise ValueError(
-                    f"leaf {x} has no 'reconc' attribute, pass sigma explicitly"
+                    f"leaf {x} has no 'reconc' or 'color' attribute, "
+                    "pass sigma explicitly"
                 )
             resolved[x] = _hashableColor(color)
         return resolved
@@ -237,7 +242,7 @@ def _resolveColors(network: nx.DiGraph, leaves: list, sigma: dict) -> dict:
     return {x: _hashableColor(sigma[x]) for x in leaves}
 
 
-def _resolveLabels(network: nx.DiGraph, leaves: list, labels: dict) -> dict:
+def _resolveLabels(network: nx.DiGraph, leaves: list, labels: dict | None) -> dict:
     if labels is None:
         candidates = {x: network.nodes[x].get("label") for x in leaves}
         usable = all(label is not None for label in candidates.values())
