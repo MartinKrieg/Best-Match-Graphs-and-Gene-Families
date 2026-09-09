@@ -40,3 +40,10 @@ from .editing_operations import(
     removingRedundantVertices,
     cleanUpDummyVertices,
 )
+from .edit_move_checks import (
+    MoveSurvey,
+    checkMoveCombinations,
+    checkSingleMoves,
+    formatMoveSurvey,
+    surveyEditMoves,
+)

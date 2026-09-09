@@ -2,7 +2,7 @@ from utils import generateGeneTree, generateTreeBmg, visualizeBmg, visualizeHier
 from src import generateHybridNetwork, buildBaseBigCherry, extendBicCherryNetwork, extendBicCherryNetworkEdgeRestricted
 from src import leastResolvedTree, explainsBmg, toNetwork
 from src import missingArcs, networkExplainsBmg
-from src import editingNetwork
+from src import surveyEditMoves, formatMoveSurvey
 import argparse
 
 if __name__ == "__main__":
@@ -40,4 +40,7 @@ if __name__ == "__main__":
     network = extendBicCherryNetworkEdgeRestricted(base_network, base_parents,bmg,geneColors)
     print(f"-> Edge-restricted expansion explains the BMG: strict={networkExplainsBmg(network, bmg)} weak={networkExplainsBmg(network, bmg, weak=True)}")
     visualizeHierarchicalNetwork(network, "Expanded_Phylogenetic_Network_Restricted", root, geneColors, "./plots/big_cherry")
+
+    survey = surveyEditMoves(network)
+    print(f"-> Task 2d edit-move BMG check:\n{formatMoveSurvey(survey)}")
     
