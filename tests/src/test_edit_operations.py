@@ -1,18 +1,22 @@
 # test_editing_operations.py
+from itertools import islice
+
 import pytest
 import networkx as nx
 
 from src import (
     preserveNetworkLeaves,
+    preservesPhylogeneticNetwork,
     checkBmgRelations,
-    _try_move_edge,
-    _try_contract,
     pullingUpEditing,
     pullingDownEditing,
     removingRedundantVertices,
     cleanUpDummyVertices,
     editingNetwork,
+    iterEditingSteps,
 )
+# the move helpers are internals of the module, not part of the package API
+from src.editing_operations import _tryContract, _tryMoveEdge
 from utils import generateNetworkBmg
 
 
@@ -139,7 +143,7 @@ class TestTryMoveEdge:
         for u, v in list(net.edges()):
             for parent in list(net.predecessors(u)):
                 g = net.copy()
-                if _try_move_edge(g, u, v, parent, v, bmg, orig_leaves):
+                if _tryMoveEdge(g, u, v, parent, v, bmg, orig_leaves):
                     accepted = True
                     assert checkBmgRelations(bmg, generateNetworkBmg(g))
                     assert preserveNetworkLeaves(orig_leaves, g)
@@ -159,7 +163,7 @@ class TestTryMoveEdge:
         # directly test cycle rejection:
         g = net.copy()
         g.add_edge('b', 'a')          # now b -> a exists
-        moved = _try_move_edge(g, 'b', 'a', 'x', 'a', bmg, orig_leaves)
+        moved = _tryMoveEdge(g, 'b', 'a', 'x', 'a', bmg, orig_leaves)
         # x -> a: cycle a -> x -> a is only a cycle if a is ancestor of x — it is!
         assert moved is False
         assert set(g.edges()) | set() == set(g.edges())  # sanity: still a graph
@@ -174,13 +178,13 @@ class TestTryMoveEdge:
         before = set(g.edges())
         # r -> a already exists: moving ('r','a') to ('r','a') is blocked by
         # new_u == new_v; moving ('r','b') head to a node where the edge exists:
-        assert _try_move_edge(g, 'r', 'b', 'r', 'a', bmg, orig_leaves) is False
+        assert _tryMoveEdge(g, 'r', 'b', 'r', 'a', bmg, orig_leaves) is False
         assert set(g.edges()) == before
 
     def test_self_loop_blocked(self, net, bmg, orig_leaves):
         g = net.copy()
         before = set(g.edges())
-        assert _try_move_edge(g, 'a', 'x', 'x', 'x', bmg, orig_leaves) is False
+        assert _tryMoveEdge(g, 'a', 'x', 'x', 'x', bmg, orig_leaves) is False
         assert set(g.edges()) == before
 
 
@@ -190,7 +194,7 @@ class TestTryContract:
     def test_contract_dummy_vertex_preserves_bmg(self, bmg, orig_leaves):
         g = network_with_dummy_vertex()
         bmg = generateNetworkBmg(g) 
-        assert _try_contract(g, 'd', bmg, orig_leaves)
+        assert _tryContract(g, 'd', bmg, orig_leaves)
         assert 'd' not in g
         assert g.has_edge('a', 'x') and g.has_edge('a', 'y')
         assert checkBmgRelations(bmg, generateNetworkBmg(g))
@@ -200,7 +204,7 @@ class TestTryContract:
         g = net.copy()
         before = set(g.edges())
         # 'r' has out_degree 2 -> not a dummy
-        assert _try_contract(g, 'r', bmg, orig_leaves) is False
+        assert _tryContract(g, 'r', bmg, orig_leaves) is False
         assert set(g.edges()) == before
 
     def test_failed_contract_rolls_back_node_and_edges(self, net, bmg, orig_leaves):
@@ -208,7 +212,7 @@ class TestTryContract:
         before_edges = set(g.edges())
         before_nodes = set(g.nodes())
         # contract a leaf? leaves have out_degree 0 -> rejected without mutation
-        _try_contract(g, 'x', bmg, orig_leaves)
+        _tryContract(g, 'x', bmg, orig_leaves)
         assert set(g.edges()) == before_edges
         assert set(g.nodes()) == before_nodes
 
@@ -327,7 +331,6 @@ class TestEditingNetwork:
         assert set(again.edges()) == set(result.edges())
         assert set(again.nodes()) == set(result.nodes())
 
-    @pytest.mark.timeout(10)
     def test_no_infinite_loop_on_random_networks(self):
         import random
         random.seed(42)
@@ -350,3 +353,109 @@ class TestEditingNetwork:
             result = editingNetwork(g, bmg)
             assert nx.is_directed_acyclic_graph(result)
             assert checkBmgRelations(bmg, generateNetworkBmg(result))
+
+
+# ---------------------------------------------------------------- move counting
+
+class TestIterEditingSteps:
+    """The step generator is what makes the move count observable."""
+
+    def test_the_walk_terminates(self, net, bmg):
+        # a bound instead of a wall-clock timeout: if the generator is still
+        # producing after CAP steps it does not terminate. pytest-timeout is
+        # not a dependency of this project, so @pytest.mark.timeout would be
+        # silently ignored.
+        CAP = 500
+        steps = list(islice(iterEditingSteps(net, bmg, checkBMG=False), CAP))
+        assert len(steps) < CAP
+
+    def test_every_step_is_a_phylogenetic_network(self, net, bmg, orig_leaves):
+        for step in islice(iterEditingSteps(net, bmg, checkBMG=False), 20):
+            assert preservesPhylogeneticNetwork(orig_leaves, step)
+
+    def test_no_state_is_yielded_twice(self, net, bmg):
+        steps = list(islice(iterEditingSteps(net, bmg, checkBMG=False), 50))
+        signatures = [frozenset(step.edges()) for step in steps]
+        assert len(set(signatures)) == len(signatures)
+
+    def test_filtered_steps_all_keep_the_bmg(self, net, bmg):
+        for step in islice(iterEditingSteps(net, bmg, checkBMG=True), 20):
+            assert checkBmgRelations(bmg, generateNetworkBmg(step))
+
+
+class TestNumberMoves:
+    def test_zero_moves_returns_an_unedited_copy(self, net, bmg):
+        result = editingNetwork(net, bmg, checkBMG=False, numberMoves=0)
+        assert set(result.edges()) == set(net.edges())
+        assert set(result.nodes()) == set(net.nodes())
+        assert result is not net
+
+    def test_k_moves_agree_with_the_k_th_step(self, net, bmg):
+        steps = list(islice(iterEditingSteps(net, bmg, checkBMG=False), 3))
+        for k, step in enumerate(steps, start=1):
+            result = editingNetwork(net, bmg, checkBMG=False, numberMoves=k)
+            assert set(result.edges()) == set(step.edges())
+
+    def test_more_moves_than_available_stops_at_the_stable_network(self, net, bmg):
+        stable = editingNetwork(net, bmg, checkBMG=False)
+        result = editingNetwork(net, bmg, checkBMG=False, numberMoves=10 ** 4)
+        assert set(result.edges()) == set(stable.edges())
+
+    def test_one_move_already_changes_the_network(self, net, bmg):
+        result = editingNetwork(net, bmg, checkBMG=False, numberMoves=1)
+        assert set(result.edges()) != set(net.edges())
+
+
+class TestCheckBmgFlag:
+    def test_filtering_keeps_the_bmg_for_every_prefix(self, net, bmg):
+        for k in range(4):
+            result = editingNetwork(net, bmg, checkBMG=True, numberMoves=k)
+            assert checkBmgRelations(bmg, generateNetworkBmg(result))
+
+    def test_not_filtering_can_break_the_bmg(self, net, bmg):
+        """The empirical core of task 2d: geometry alone is not enough."""
+        broken = [
+            k for k in range(1, 5)
+            if not checkBmgRelations(
+                bmg,
+                generateNetworkBmg(
+                    editingNetwork(net, bmg, checkBMG=False, numberMoves=k)
+                ),
+            )
+        ]
+        assert broken
+
+    def test_the_default_is_to_filter(self, net, bmg):
+        assert set(editingNetwork(net, bmg).edges()) == set(
+            editingNetwork(net, bmg, checkBMG=True).edges()
+        )
+
+
+# ---------------------------------------------------------------- geometry guard
+
+class TestPreservesPhylogeneticNetwork:
+    def test_the_untouched_network_qualifies(self, net, orig_leaves):
+        assert preservesPhylogeneticNetwork(orig_leaves, net)
+
+    def test_a_second_root_is_rejected(self, net, orig_leaves):
+        # detaching 'a' from the root leaves two sources behind. The leaf set
+        # and acyclicity both survive, so only the root check catches it.
+        net.remove_edge('r', 'a')
+        assert preserveNetworkLeaves(orig_leaves, net)
+        assert nx.is_directed_acyclic_graph(net)
+        assert not preservesPhylogeneticNetwork(orig_leaves, net)
+
+    def test_a_cycle_is_rejected(self, net, orig_leaves):
+        net.add_edge('x', 'r')
+        assert not preservesPhylogeneticNetwork(orig_leaves, net)
+
+    def test_a_changed_leaf_set_is_rejected(self, net, orig_leaves):
+        net.add_edge('x', 'newLeaf')
+        assert not preservesPhylogeneticNetwork(orig_leaves, net)
+
+    def test_edits_never_detach_the_root(self, net, bmg, orig_leaves):
+        """Pulling a head down can orphan its tail; that must be refused."""
+        g = net.copy()
+        # ('r','a') -> ('r','x') would leave 'a' without any parent
+        assert _tryMoveEdge(g, 'r', 'a', 'r', 'x', bmg, orig_leaves, False) is False
+        assert set(g.edges()) == set(net.edges())
