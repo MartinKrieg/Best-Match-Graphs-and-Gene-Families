@@ -1,50 +1,102 @@
 """
 Task 2d: do the 2c edit operations preserve the (weak) best match graph?
 
-A geometric move is any pull-up, pull-down, dummy contraction or redundant
-vertex removal that keeps a DAG on the same leaf set. This module
-surveys the geometric candidates themselves and checks both the strict and the
-weak BMG against the network before the move, including short sequences.
+A candidate is any pull-up, pull-down, dummy contraction or redundant vertex
+removal that leaves a phylogenetic network on the same leaf set, i.e. one that
+passes src.editing_operations.preservesPhylogeneticNetwork. Whether it keeps the
+best match graph is exactly what this module measures, so the BMG is never
+consulted when a candidate is collected.
+
+The candidates come from the very helpers src.editing_operations uses, called
+with checkBMG=False so that nothing is filtered out. That way the survey
+measures the move set task 2c really offers instead of a second implementation
+of it.
+
+Counting single moves is cheap, so their number is exact. Sequences of them are
+not: the number of networks reachable in three moves runs into the millions on
+the networks of task 2b, so those walks take a sample. Every count therefore
+travels with the number of networks actually checked and a flag saying whether
+the walk finished, because a share is only meaningful against the second and a
+bare total invites reading a cut-off walk as a census.
 """
 
+import math
+import random
 from typing import NamedTuple
 
 import networkx as nx
 
-from .editing_operations import preserveNetworkLeaves
+from .editing_operations import (
+    _tryContract,
+    _tryMoveEdge,
+    _tryRemoveRedundant,
+    iterEditingSteps,
+    redundantVertexGroups,
+)
 from .network_best_matches import bestMatchGraphs
 
 
 class MoveResult(NamedTuple):
-    """One geometrically valid candidate and whether it keeps the BMGs."""
+    """One candidate and whether it keeps the BMGs."""
 
     kind: str
     strict: bool
     weak: bool
 
 
-class MoveSurvey(NamedTuple):
-    """Counts for task 2d: singles, then sequences of two and three moves."""
+class SequenceResult(NamedTuple):
+    """A sequence of candidates and whether the end network keeps the BMGs."""
 
-    geometric: int
-    singleStrict: int
-    singleWeak: int
-    pairGeometric: int
-    pairStrict: int
-    pairWeak: int
-    tripleGeometric: int
-    tripleStrict: int
-    tripleWeak: int
+    kinds: tuple
+    strict: bool
+    weak: bool
+
+
+class MoveCounts(NamedTuple):
+    """How many candidates there are, how many were checked, how many survived.
+
+    total and checked are kept apart on purpose. A single number cannot say
+    whether 30 means "there are 30" or "we stopped at 30", and the shares are
+    only meaningful against the number actually checked.
+
+    exhaustive is False when the walk was cut short by a limit. The shares are
+    then estimates from a random sample of a larger neighbourhood, and total is
+    a lower bound rather than a census.
+    """
+
+    total: int
+    checked: int
+    strict: int
+    weak: int
+    exhaustive: bool
+
+    def strictShare(self) -> float | None:
+        return self.strict / self.checked if self.checked else None
+
+    def weakShare(self) -> float | None:
+        return self.weak / self.checked if self.checked else None
+
+
+class MoveSurvey(NamedTuple):
+    """Task 2d for one network: singles, pairs, triples and the greedy path."""
+
+    singles: MoveCounts
+    pairs: MoveCounts
+    triples: MoveCounts
+    path: MoveCounts
 
     def everyAcceptedMoveKeepsBothBmgs(self) -> bool:
-        """Whether every geometrically valid single move kept both BMGs.
+        """Whether every single-move candidate that was checked kept both BMGs.
 
-        Vacuous when the network admits no geometric move, which happens on
+        Vacuous when the network admits no candidate at all, which happens on
         already least-resolved trees.
         """
-        if self.geometric == 0:
+        if self.singles.checked == 0:
             return True
-        return self.singleStrict == self.geometric and self.singleWeak == self.geometric
+        return (
+            self.singles.strict == self.singles.checked
+            and self.singles.weak == self.singles.checked
+        )
 
 
 def leafSet(network: nx.DiGraph) -> set:
@@ -62,261 +114,349 @@ def networkBmgs(network: nx.DiGraph, sigma: dict | None = None):
     return bestMatchGraphs(network, sigma=sigma)
 
 
-def _isPhylogenetic(network: nx.DiGraph, originalLeaves: set) -> bool:
-    """DAG, same leaves, unique root — the 2c operations assume all three."""
-    if not nx.is_directed_acyclic_graph(network):
-        return False
-    if not preserveNetworkLeaves(originalLeaves, network):
-        return False
-    sources = [v for v in network.nodes() if network.in_degree(v) == 0]
-    return len(sources) == 1
+def candidateMoveApplicators(network: nx.DiGraph) -> list:
+    """Callables that apply one 2c-move to the network they are given.
 
-
-def _relocateEdge(network: nx.DiGraph, u, v, newU, newV, originalLeaves: set) -> bool:
-    if newU == newV or network.has_edge(newU, newV):
-        return False
-    network.remove_edge(u, v)
-    network.add_edge(newU, newV)
-    if not _isPhylogenetic(network, originalLeaves):
-        network.remove_edge(newU, newV)
-        network.add_edge(u, v)
-        return False
-    return True
-
-
-def _contractDummy(network: nx.DiGraph, node, originalLeaves: set) -> bool:
-    if network.in_degree(node) != 1 or network.out_degree(node) != 1:
-        return False
-    parent = next(network.predecessors(node))
-    child = next(network.successors(node))
-    if network.has_edge(parent, child):
-        return False
-    network.add_edge(parent, child)
-    network.remove_node(node)
-    if not _isPhylogenetic(network, originalLeaves):
-        network.add_node(node)
-        network.add_edge(parent, node)
-        network.add_edge(node, child)
-        network.remove_edge(parent, child)
-        return False
-    return True
-
-
-def _removeRedundant(network: nx.DiGraph, node, originalLeaves: set) -> bool:
-    if node not in network or network.out_degree(node) == 0:
-        return False
-    network.remove_node(node)
-    if not _isPhylogenetic(network, originalLeaves):
-        return False
-    return True
-
-
-def geometricMoveApplicators(network: nx.DiGraph) -> list:
-    """Callables that apply one geometric 2c-move to a copy of the network.
-
-    Pull-up/down follow the same candidate set as src.editing_operations.
-    Contractions target 1-in/1-out inner vertices. Redundant vertices are
-    inner vertices that share parents and children with another inner vertex.
+    The candidate sets are the ones src.editing_operations.pullingUpEditing and
+    pullingDownEditing walk: contractions target 1-in/1-out inner vertices, and
+    redundant vertices are inner vertices sharing parents and children with
+    another inner vertex. Every applicator rolls back on its own if the move
+    does not leave a phylogenetic network, and returns False in that case.
     """
     originalLeaves = leafSet(network)
+
+    def relocate(u, v, newU, newV):
+        return lambda N: _tryMoveEdge(N, u, v, newU, newV, None, originalLeaves, False)
+
+    def contract(node):
+        return lambda N: _tryContract(N, node, None, originalLeaves, False)
+
+    def drop(node):
+        return lambda N: _tryRemoveRedundant(N, node, None, originalLeaves, False)
+
     applicators = []
 
     for u, v in network.edges():
         for parentU in network.predecessors(u):
-            applicators.append(
-                (
-                    "pull-up-tail",
-                    lambda N, u=u, v=v, p=parentU: _relocateEdge(
-                        N, u, v, p, v, originalLeaves
-                    ),
-                )
-            )
+            applicators.append(("pull-up-tail", relocate(u, v, parentU, v)))
         for parentV in network.predecessors(v):
             if parentV != u:
-                applicators.append(
-                    (
-                        "pull-up-head",
-                        lambda N, u=u, v=v, p=parentV: _relocateEdge(
-                            N, u, v, u, p, originalLeaves
-                        ),
-                    )
-                )
+                applicators.append(("pull-up-head", relocate(u, v, u, parentV)))
         for childU in network.successors(u):
             if childU != v:
-                applicators.append(
-                    (
-                        "pull-down-tail",
-                        lambda N, u=u, v=v, c=childU: _relocateEdge(
-                            N, u, v, c, v, originalLeaves
-                        ),
-                    )
-                )
+                applicators.append(("pull-down-tail", relocate(u, v, childU, v)))
         for childV in network.successors(v):
-            applicators.append(
-                (
-                    "pull-down-head",
-                    lambda N, u=u, v=v, c=childV: _relocateEdge(
-                        N, u, v, u, c, originalLeaves
-                    ),
-                )
-            )
+            applicators.append(("pull-down-head", relocate(u, v, u, childV)))
 
-    for node in list(network.nodes()):
-        if network.in_degree(node) == 1 and network.out_degree(node) == 1:
-            applicators.append(
-                (
-                    "contract",
-                    lambda N, node=node: _contractDummy(N, node, originalLeaves),
-                )
-            )
-
-    signatures = {}
     for node in network.nodes():
-        if network.in_degree(node) == 0 or network.out_degree(node) == 0:
-            continue
-        sig = (
-            frozenset(network.predecessors(node)),
-            frozenset(network.successors(node)),
-        )
-        signatures.setdefault(sig, []).append(node)
-    for nodes in signatures.values():
-        if len(nodes) < 2:
-            continue
+        if network.in_degree(node) == 1 and network.out_degree(node) == 1:
+            applicators.append(("contract", contract(node)))
+
+    for nodes in redundantVertexGroups(network):
         for node in nodes[1:]:
-            applicators.append(
-                (
-                    "remove-redundant",
-                    lambda N, node=node: _removeRedundant(N, node, originalLeaves),
-                )
-            )
+            applicators.append(("remove-redundant", drop(node)))
 
     return applicators
 
 
-def applyGeometricMove(network: nx.DiGraph, apply) -> nx.DiGraph | None:
-    """Apply a candidate to a copy; None if it is not geometrically valid."""
+def applyCandidateMove(network: nx.DiGraph, apply) -> nx.DiGraph | None:
+    """Apply a candidate to a copy; None if it does not leave a network."""
     trial = network.copy()
     if not apply(trial):
         return None
     return trial
 
 
-def evaluateMove(network: nx.DiGraph, apply, sigma, originStrict, originWeak):
-    """Apply a candidate to a copy and compare both BMGs to the origin."""
-    trial = applyGeometricMove(network, apply)
-    if trial is None:
-        return None
-    strict, weak = networkBmgs(trial, sigma=sigma)
+def _keepsBmgs(
+    network: nx.DiGraph, sigma: dict | None, originStrict, originWeak
+) -> tuple[bool, bool]:
+    """Whether network has the same strict and the same weak BMG as the origin."""
+    strict, weak = networkBmgs(network, sigma=sigma)
     return (
-        trial,
         sameColoredGraph(strict, originStrict),
         sameColoredGraph(weak, originWeak),
     )
 
 
+def candidateMoves(network: nx.DiGraph) -> list:
+    """Every single-move candidate as a (kind, resulting network) pair.
+
+    Applying a candidate is cheap, computing a best match graph is not, so the
+    candidate set is always enumerated in full and only the sample that gets
+    checked pays for a BMG. That is what lets the survey report an exact total
+    even when it checks fewer of them.
+    """
+    moves = []
+    for kind, apply in candidateMoveApplicators(network):
+        trial = applyCandidateMove(network, apply)
+        if trial is not None:
+            moves.append((kind, trial))
+    return moves
+
+
+def _sample(items: list, limit: int | None, seed: int) -> tuple[list, bool]:
+    """Cut items down to limit at random, and say whether all of them were kept.
+
+    Taking the first few instead would bias the result: the enumeration follows
+    the arcs of the network, so a prefix comes from the first few arcs only.
+    """
+    if limit is None or len(items) <= limit:
+        return items, True
+    return random.Random(seed).sample(items, limit), False
+
+
 def checkSingleMoves(
-    network: nx.DiGraph, sigma: dict | None = None, limit: int | None = None
+    network: nx.DiGraph,
+    sigma: dict | None = None,
+    limit: int | None = None,
+    seed: int = 0,
 ) -> list[MoveResult]:
-    """Every geometrically valid 2c-move, with strict and weak BMG verdicts."""
+    """Single-move candidates, with strict and weak BMG verdicts.
+
+    limit=None checks every candidate. A smaller limit draws a random sample of
+    that size, so the shares stay unbiased estimates of the whole neighbourhood.
+    seed makes that draw reproducible.
+    """
+    return _surveySingleMoves(network, sigma, limit, seed)[0]
+
+
+def _surveySingleMoves(
+    network: nx.DiGraph, sigma: dict | None, limit: int | None, seed: int
+) -> tuple[list[MoveResult], int, bool]:
+    """(verdicts for the checked sample, total number of candidates, exhaustive)."""
     originStrict, originWeak = networkBmgs(network, sigma=sigma)
-    results = []
-    for kind, apply in geometricMoveApplicators(network):
-        if limit is not None and len(results) >= limit:
-            break
-        outcome = evaluateMove(network, apply, sigma, originStrict, originWeak)
-        if outcome is None:
-            continue
-        _, strict, weak = outcome
-        results.append(MoveResult(kind, strict, weak))
-    return results
+    everyMove = candidateMoves(network)
+    drawn, exhaustive = _sample(everyMove, limit, seed)
+
+    results = [
+        MoveResult(kind, *_keepsBmgs(trial, sigma, originStrict, originWeak))
+        for kind, trial in drawn
+    ]
+    return results, len(everyMove), exhaustive
 
 
 def checkMoveCombinations(
     network: nx.DiGraph,
     length: int,
     sigma: dict | None = None,
-    limit: int = 40,
-) -> list[tuple[bool, bool]]:
-    """Sequences of 'length' geometrically valid moves, compared to G(N).
+    limit: int | None = 40,
+    seed: int = 0,
+) -> list[SequenceResult]:
+    """Sequences of 'length' candidates in a row, compared to G(N).
 
     The BMGs of the final network are checked against those of the starting
     network, not against the intermediate ones. A sequence may therefore break
     a BMG even if each prefix would have been accepted by task 2c.
+
+    Every end network is reported once. Sequences that lead back to the
+    starting network are dropped, because undoing a pull is not a modification
+    and would otherwise count as a sequence that trivially kept both BMGs.
+
+    limit=None walks the whole neighbourhood, which grows roughly as the number
+    of candidates to the power of length. A smaller limit keeps at most that
+    many networks per depth, drawn at random; seed makes the draw reproducible.
+    """
+    return _surveyMoveCombinations(network, length, sigma, limit, seed)[0]
+
+
+def _expandOnce(
+    source: nx.DiGraph, kinds: tuple, keep: int | None, rng: random.Random
+) -> tuple[list, bool]:
+    """Up to keep networks one candidate move on from source, and whether it cut.
+
+    keep=None applies every candidate. Otherwise the candidates are tried in a
+    random order and the walk stops once it has enough, which is what keeps a
+    capped survey affordable: the networks here admit a few thousand candidates
+    and applying one means copying the graph, while comparing best match graphs
+    afterwards is comparatively cheap.
+    """
+    applicators = candidateMoveApplicators(source)
+    if keep is not None:
+        rng.shuffle(applicators)
+
+    children = []
+    for kind, apply in applicators:
+        if keep is not None and len(children) >= keep:
+            return children, True
+        trial = applyCandidateMove(source, apply)
+        if trial is not None:
+            children.append((kinds + (kind,), trial))
+    return children, False
+
+
+def _surveyMoveCombinations(
+    network: nx.DiGraph,
+    length: int,
+    sigma: dict | None,
+    limit: int | None,
+    seed: int,
+) -> tuple[list[SequenceResult], bool]:
+    """(verdicts, whether the whole neighbourhood was walked).
+
+    The walk goes depth by depth rather than depth-first. Under a limit a
+    depth-first walk spends its whole budget inside the first branch it descends
+    into, so every sequence it reports shares a prefix and the shares describe
+    that one branch instead of the neighbourhood. Going by depth and drawing the
+    survivors at random spreads them over the neighbourhood instead.
+
+    The draw is split evenly over the networks of a depth, so each of them
+    contributes its share of the next one rather than the first few crowding the
+    rest out.
     """
     if length < 2:
         raise ValueError("combinations are sequences of at least two moves")
+
+    rng = random.Random(seed)
+    start = frozenset(network.edges())
+    exhaustive = True
+
+    layer = [((), network)]
+    for depth in range(length):
+        perSource = None if limit is None else max(1, math.ceil(limit / len(layer)))
+
+        reached = {}
+        for kinds, current in layer:
+            children, cut = _expandOnce(current, kinds, perSource, rng)
+            exhaustive = exhaustive and not cut
+            for childKinds, trial in children:
+                # two prefixes reaching the same network have the same future
+                reached.setdefault(frozenset(trial.edges()), (childKinds, trial))
+
+        if depth == length - 1:
+            # undoing a pull is not a modification, so it is not a sequence
+            reached.pop(start, None)
+
+        layer = list(reached.values())
+        if limit is not None and len(layer) > limit:
+            layer = rng.sample(layer, limit)
+            exhaustive = False
+
     originStrict, originWeak = networkBmgs(network, sigma=sigma)
-    return _walkCombinations(
-        network, length, sigma, originStrict, originWeak, limit
-    )
+    results = [
+        SequenceResult(kinds, *_keepsBmgs(trial, sigma, originStrict, originWeak))
+        for kinds, trial in layer
+    ]
+    return results, exhaustive
 
 
-def _walkCombinations(
-    network, length, sigma, originStrict, originWeak, limit, depth=0
-) -> list[tuple[bool, bool]]:
-    found = []
-    for _, apply in geometricMoveApplicators(network):
-        if len(found) >= limit:
+def checkEditingPath(
+    network: nx.DiGraph,
+    sigma: dict | None = None,
+    maxMoves: int | None = 3,
+) -> list[SequenceResult]:
+    """Task 2d along the greedy path src.editing_operations actually walks.
+
+    checkSingleMoves and checkMoveCombinations enumerate the neighbourhood;
+    this follows the one trajectory editingNetwork commits to with its filter
+    switched off. Entry k of the result is the network after k+1 moves.
+
+    There is nothing to sample here, since the path is a single trajectory.
+    maxMoves only decides how far along it to look.
+    """
+    return _surveyEditingPath(network, sigma, maxMoves)[0]
+
+
+def _surveyEditingPath(
+    network: nx.DiGraph, sigma: dict | None, maxMoves: int | None
+) -> tuple[list[SequenceResult], bool]:
+    """(verdicts, whether the path ended on its own rather than at maxMoves)."""
+    originStrict, originWeak = networkBmgs(network, sigma=sigma)
+    results = []
+    exhaustive = True
+
+    for step in iterEditingSteps(network, originWeak, checkBMG=False):
+        results.append(
+            SequenceResult(
+                ("greedy-path",) * (len(results) + 1),
+                *_keepsBmgs(step, sigma, originStrict, originWeak),
+            )
+        )
+        if maxMoves is not None and len(results) >= maxMoves:
+            exhaustive = False
             break
-        trial = applyGeometricMove(network, apply)
-        if trial is None:
-            continue
-        if depth + 1 == length:
-            strict, weak = networkBmgs(trial, sigma=sigma)
-            found.append(
-                (
-                    sameColoredGraph(strict, originStrict),
-                    sameColoredGraph(weak, originWeak),
-                )
-            )
-        else:
-            found.extend(
-                _walkCombinations(
-                    trial,
-                    length,
-                    sigma,
-                    originStrict,
-                    originWeak,
-                    limit - len(found),
-                    depth + 1,
-                )
-            )
-    return found
+
+    return results, exhaustive
+
+
+def _counts(results: list, total: int, exhaustive: bool) -> MoveCounts:
+    return MoveCounts(
+        total=total,
+        checked=len(results),
+        strict=sum(m.strict for m in results),
+        weak=sum(m.weak for m in results),
+        exhaustive=exhaustive,
+    )
 
 
 def surveyEditMoves(
     network: nx.DiGraph,
     sigma: dict | None = None,
-    singleLimit: int | None = 80,
-    pairLimit: int = 30,
-    tripleLimit: int = 20,
+    singleLimit: int | None = None,
+    pairLimit: int | None = 500,
+    tripleLimit: int | None = 500,
+    pathLimit: int | None = None,
+    seed: int = 0,
 ) -> MoveSurvey:
-    """Task 2d for one network: singles, pairs and triples of 2c-moves."""
-    singles = checkSingleMoves(network, sigma=sigma, limit=singleLimit)
-    pairs = checkMoveCombinations(network, length=2, sigma=sigma, limit=pairLimit)
-    triples = checkMoveCombinations(network, length=3, sigma=sigma, limit=tripleLimit)
+    """Task 2d for one network: singles, pairs, triples and the greedy path.
+
+    Only the two sequence walks are limited by default. They grow roughly as the
+    number of candidates to the power of their length, and 500 is enough for
+    their shares to settle; whenever a limit bites, the MoveCounts of that row
+    says exhaustive=False and its total is only a lower bound.
+
+    The other two rows are exact. Enumerating single moves is cheap, and the
+    greedy path is one trajectory that ends by itself. Cutting the path short
+    would be worse than sampling a walk, because its first moves are not
+    representative of it: on the tree-BMG network of task 2b the first three all
+    keep the BMG while only one in nine does over the whole path.
+    """
+    singles, singleTotal, singlesDone = _surveySingleMoves(
+        network, sigma, singleLimit, seed
+    )
+    pairs, pairsDone = _surveyMoveCombinations(network, 2, sigma, pairLimit, seed)
+    triples, triplesDone = _surveyMoveCombinations(
+        network, 3, sigma, tripleLimit, seed
+    )
+    path, pathDone = _surveyEditingPath(network, sigma, pathLimit)
+
     return MoveSurvey(
-        geometric=len(singles),
-        singleStrict=sum(m.strict for m in singles),
-        singleWeak=sum(m.weak for m in singles),
-        pairGeometric=len(pairs),
-        pairStrict=sum(strict for strict, _ in pairs),
-        pairWeak=sum(weak for _, weak in pairs),
-        tripleGeometric=len(triples),
-        tripleStrict=sum(strict for strict, _ in triples),
-        tripleWeak=sum(weak for _, weak in triples),
+        singles=_counts(singles, singleTotal, singlesDone),
+        # the sequence walks stop at the limit, so all they know is what they saw
+        pairs=_counts(pairs, len(pairs), pairsDone),
+        triples=_counts(triples, len(triples), triplesDone),
+        path=_counts(path, len(path), pathDone),
     )
 
 
 def formatMoveSurvey(survey: MoveSurvey) -> str:
-    return (
-        f"singles  geometric={survey.geometric} "
-        f"strict={survey.singleStrict}/{survey.geometric} "
-        f"weak={survey.singleWeak}/{survey.geometric}\n"
-        f"pairs    geometric={survey.pairGeometric} "
-        f"strict={survey.pairStrict}/{survey.pairGeometric} "
-        f"weak={survey.pairWeak}/{survey.pairGeometric}\n"
-        f"triples  geometric={survey.tripleGeometric} "
-        f"strict={survey.tripleStrict}/{survey.tripleGeometric} "
-        f"weak={survey.tripleWeak}/{survey.tripleGeometric}"
+    """One line per row. The denominators are what was checked, not what exists.
+
+    So a row whose candidate count is larger than its denominator was sampled,
+    and '+' says even that count is only a lower bound.
+    """
+    rows = (
+        ("singles", survey.singles),
+        ("pairs", survey.pairs),
+        ("triples", survey.triples),
+        ("path", survey.path),
     )
+    lines = [
+        "candidates: edits leaving a phylogenetic network on the same leaf set, "
+        "the BMG is not consulted",
+        "'+' marks a walk that stopped at its limit, so its total is a lower "
+        "bound: the pair and triple rows then hold a random sample of that "
+        "depth, the path row its first moves",
+    ]
+    for label, counts in rows:
+        total = counts.total if counts.exhaustive else f"{counts.total}+"
+        strictShare = counts.strictShare()
+        weakShare = counts.weakShare()
+        if strictShare is None:
+            lines.append(f"{label:9}candidates={total} nothing to check")
+            continue
+        lines.append(
+            f"{label:9}candidates={total} "
+            f"strict={counts.strict}/{counts.checked} ({strictShare:.0%}) "
+            f"weak={counts.weak}/{counts.checked} ({weakShare:.0%})"
+        )
+    return "\n".join(lines)

@@ -41,7 +41,12 @@ from .editing_operations import(
     cleanUpDummyVertices,
 )
 from .edit_move_checks import (
+    MoveCounts,
+    MoveResult,
     MoveSurvey,
+    SequenceResult,
+    candidateMoves,
+    checkEditingPath,
     checkMoveCombinations,
     checkSingleMoves,
     formatMoveSurvey,
