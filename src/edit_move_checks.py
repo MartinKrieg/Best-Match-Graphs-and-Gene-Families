@@ -30,6 +30,7 @@ from .editing_operations import (
     _tryContract,
     _tryMoveEdge,
     _tryRemoveRedundant,
+    checkBmgRelations,
     iterEditingSteps,
     redundantVertexGroups,
 )
@@ -103,17 +104,6 @@ def leafSet(network: nx.DiGraph) -> set:
     return {v for v in network.nodes() if network.out_degree(v) == 0}
 
 
-def sameColoredGraph(first: nx.DiGraph, second: nx.DiGraph) -> bool:
-    return set(first.nodes()) == set(second.nodes()) and set(first.edges()) == set(
-        second.edges()
-    )
-
-
-def networkBmgs(network: nx.DiGraph, sigma: dict | None = None):
-    """Strict and weak BMG of a leaf-colored network."""
-    return bestMatchGraphs(network, sigma=sigma)
-
-
 def candidateMoveApplicators(network: nx.DiGraph) -> list:
     """Callables that apply one 2c-move to the network they are given.
 
@@ -171,10 +161,10 @@ def _keepsBmgs(
     network: nx.DiGraph, sigma: dict | None, originStrict, originWeak
 ) -> tuple[bool, bool]:
     """Whether network has the same strict and the same weak BMG as the origin."""
-    strict, weak = networkBmgs(network, sigma=sigma)
+    strict, weak = bestMatchGraphs(network, sigma=sigma)
     return (
-        sameColoredGraph(strict, originStrict),
-        sameColoredGraph(weak, originWeak),
+        checkBmgRelations(originStrict, strict),
+        checkBmgRelations(originWeak, weak),
     )
 
 
@@ -224,7 +214,7 @@ def _surveySingleMoves(
     network: nx.DiGraph, sigma: dict | None, limit: int | None, seed: int
 ) -> tuple[list[MoveResult], int, bool]:
     """(verdicts for the checked sample, total number of candidates, exhaustive)."""
-    originStrict, originWeak = networkBmgs(network, sigma=sigma)
+    originStrict, originWeak = bestMatchGraphs(network, sigma=sigma)
     everyMove = candidateMoves(network)
     drawn, exhaustive = _sample(everyMove, limit, seed)
 
@@ -331,7 +321,7 @@ def _surveyMoveCombinations(
             layer = rng.sample(layer, limit)
             exhaustive = False
 
-    originStrict, originWeak = networkBmgs(network, sigma=sigma)
+    originStrict, originWeak = bestMatchGraphs(network, sigma=sigma)
     results = [
         SequenceResult(kinds, *_keepsBmgs(trial, sigma, originStrict, originWeak))
         for kinds, trial in layer
@@ -360,7 +350,7 @@ def _surveyEditingPath(
     network: nx.DiGraph, sigma: dict | None, maxMoves: int | None
 ) -> tuple[list[SequenceResult], bool]:
     """(verdicts, whether the path ended on its own rather than at maxMoves)."""
-    originStrict, originWeak = networkBmgs(network, sigma=sigma)
+    originStrict, originWeak = bestMatchGraphs(network, sigma=sigma)
     results = []
     exhaustive = True
 
