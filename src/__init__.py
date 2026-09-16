@@ -31,12 +31,24 @@ from .network_best_matches import (
 
 from .editing_operations import(
     editingNetwork, 
+    iterEditingSteps,
     preserveNetworkLeaves,
+    preservesPhylogeneticNetwork,
     checkBmgRelations,
-    _try_move_edge,
-    _try_contract,
     pullingUpEditing,
     pullingDownEditing,
     removingRedundantVertices,
     cleanUpDummyVertices,
+)
+from .edit_move_checks import (
+    MoveCounts,
+    MoveResult,
+    MoveSurvey,
+    SequenceResult,
+    candidateMoves,
+    checkEditingPath,
+    checkMoveCombinations,
+    checkSingleMoves,
+    formatMoveSurvey,
+    surveyEditMoves,
 )
