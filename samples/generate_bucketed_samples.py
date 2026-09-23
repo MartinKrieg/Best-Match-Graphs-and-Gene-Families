@@ -2,7 +2,7 @@
 Builds five R0-bucketed sample sets of 100 instances each, for evaluating
 heuristics separately by starting difficulty:
 
-    samples_R0_0_20.pkl     0   <= R0 < 20
+    samples_R0_1_20.pkl     1   <= R0 < 20   (R0 == 0 excluded: already a tree, no reduction work)
     samples_R0_20_40.pkl    20  <= R0 < 40
     samples_R0_40_60.pkl    40  <= R0 < 60
     samples_R0_60_80.pkl    60  <= R0 < 80
@@ -16,7 +16,7 @@ import numpy as np
 import random
 from pathlib import Path
 
-#sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import networkx as nx
 
@@ -36,7 +36,7 @@ MAX_NODES = 400
 SPECIES_RANGE = range(3, 12)
 
 BUCKETS = [
-    (0, 20, "samples_R0_0_20.pkl"),
+    (1, 20, "samples_R0_1_20.pkl"),
     (20, 40, "samples_R0_20_40.pkl"),
     (40, 60, "samples_R0_40_60.pkl"),
     (60, 80, "samples_R0_60_80.pkl"),

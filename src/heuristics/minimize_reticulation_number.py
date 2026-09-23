@@ -292,7 +292,7 @@ def reduceReticulationsPullAlternating(N: nx.DiGraph, originBmg: nx.DiGraph, max
 
 
 def main():
-  samples = loadBucket(name="samples_R0_0_20.pkl")
+  samples = loadBucket(name="samples_R0_1_20.pkl")
 
   for name, heuristic in (
     ("Pull-Up", reduceReticulationsPullUp),
