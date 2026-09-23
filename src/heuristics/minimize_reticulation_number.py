@@ -292,47 +292,53 @@ def reduceReticulationsPullAlternating(N: nx.DiGraph, originBmg: nx.DiGraph, max
 
 
 def main():
-  samples = loadBucket(name="samples_R0_1_20.pkl")
+  maxSteps = 500
 
-  for name, heuristic in (
-    ("Pull-Up", reduceReticulationsPullUp),
-    ("Pull-Down", reduceReticulationsPullDown),
-    ("Pull-Combined", reduceReticulationsPullCombined),
-    ("Pull-Alternating", reduceReticulationsPullAlternating)
-    ):
+  for variant in ("variantA", "variantB"):
+    samples = loadBucket(name=f"samples_R0_1_20_{variant}.pkl")
 
-    print(f"\n=== {name} ===")
-    improved = 0
-    maxStepsHit = 0
-    reductionSum = 0.0
+    for name, heuristic in (
+      ("Pull-Up", reduceReticulationsPullUp),
+      ("Pull-Down", reduceReticulationsPullDown),
+      ("Pull-Combined", reduceReticulationsPullCombined),
+      ("Pull-Alternating", reduceReticulationsPullAlternating)
+      ):
 
-    for instance in samples:
-      network = instance["network"]
-      bmg = instance["bmg"]
-      R0 = score(network) # R0 is the reticulation number of the initial network
+      print(f"\n=== {variant} / {name} ===")
+      improved = 0
+      trees = 0
+      maxStepsHit = 0
+      reductionSum = 0.0
 
-      started = time.time()
-      result = heuristic(network.copy(), bmg)
-      elapsed = time.time() - started
+      for instance in samples:
+        network = instance["network"]
+        bmg = instance["bmg"]
+        R0 = score(network) # R0 is the reticulation number of the initial network
 
-      hitMaxSteps = result.graph.get("hitMaxSteps", False)
+        started = time.time()
+        result = heuristic(network.copy(), bmg, maxSteps=maxSteps)
+        elapsed = time.time() - started
 
-      R = score(result)
-      if R0:
-        reductionSum += 1 - R / R0
-      if R < R0:
-        improved += 1
-      if hitMaxSteps:
-        maxStepsHit += 1
+        hitMaxSteps = result.graph.get("hitMaxSteps", False)
 
-      note = "MAXSTEPS" if hitMaxSteps else ""
-      print(f"number of species={instance['numSpecies']:<3} seed={instance['seed']:<3} "
-            f"R0={R0:<5} R={R:<5} {elapsed:6.1f}s {note}")
+        R = score(result)
+        if R0:
+          reductionSum += 1 - R / R0
+        if R < R0:
+          improved += 1
+        if R == 0:
+          trees += 1
+        if hitMaxSteps:
+          maxStepsHit += 1
 
-    n = len(samples)
-    print(f"\n{name}: {improved}/{n} improved, "
-          f"{maxStepsHit}/{n} exited due to maxsteps constraint, "
-          f"mean R-reduction {reductionSum / n:.1%}")
+        note = "MAXSTEPS" if hitMaxSteps else ""
+        print(f"number of species={instance['numSpecies']:<3} seed={instance['seed']:<3} "
+              f"R0={R0:<5} R={R:<5} {elapsed:6.1f}s {note}")
+
+      n = len(samples)
+      print(f"\n{variant} / {name}: {improved}/{n} improved, {trees}/{n} reached a tree (R=0), "
+            f"{maxStepsHit}/{n} exited due to maxsteps constraint, "
+            f"mean R-reduction {reductionSum / n:.1%}")
 
 
 if __name__ == "__main__":
