@@ -178,7 +178,7 @@ class TestEdgeRestrictedExplainsTreeBmgs:
             explanations.variantB, explanations.bmg, weak=True
         )
 
-    @pytest.mark.parametrize("numSpecies", [4, 6, 8])
+    @pytest.mark.parametrize("numSpecies", [2, 4, 6, 8])
     @pytest.mark.parametrize("seed", SEEDS)
     def test_explanation_holds_for_larger_gene_families(self, seed, numSpecies):
         explanations = explainTreeBmg(buildGeneTree(numSpecies, seed=seed))
