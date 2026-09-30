@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 from src import (
     generateHybridNetwork,
@@ -21,7 +22,7 @@ from src import (
 )
 from utils import generateGeneTree
 
-COLOR = "#2a78d6"
+SPECIES_COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7", "#e34948"]
 VARIANTS = {
     "restricted": extendBicCherryNetworkEdgeRestricted,
     "standard": extendBicCherryNetwork,
@@ -60,21 +61,29 @@ def runComparison(perCombo: int, speciesRange: range, hybRange: range, extend) -
 def plotResults(results: list, outPath: Path, variant: str):
     fig, ax = plt.subplots(figsize=(8, 5.5))
 
-    hybValues = sorted({r["numHybridizations"] for r in results})
-    successRate = []
-    for numHyb in hybValues:
-        subset = [r for r in results if r["numHybridizations"] == numHyb]
-        success = sum(1 for r in subset if r["explains"])
-        successRate.append(100 * success / len(subset))
+    for numSpecies in sorted({r["numSpecies"] for r in results}):
+        speciesRows = [r for r in results if r["numSpecies"] == numSpecies]
+        hybValues = sorted({r["numHybridizations"] for r in speciesRows})
+        successRate = []
+        for numHyb in hybValues:
+            subset = [r for r in speciesRows if r["numHybridizations"] == numHyb]
+            success = sum(1 for r in subset if r["explains"])
+            successRate.append(100 * success / len(subset))
 
-    ax.bar([str(numHyb) for numHyb in hybValues], successRate, color=COLOR)
+        ax.plot(
+            hybValues, successRate, marker="o", markersize=6, linewidth=2,
+            color=SPECIES_COLORS[(numSpecies - 2) % len(SPECIES_COLORS)],
+            label=f"{numSpecies} species (n={len(speciesRows)})",
+        )
+
     ax.set_ylim(0, 105)
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_xlabel("Number of hybridizations")
     ax.set_ylabel("Networks where wBMG(N') = wBMG(N) (%)")
-    ax.set_title(f"{variant.capitalize()} BIC-cherry+expansion explains wBMG (n={len(results)})")
+    ax.set_title(f"{variant.capitalize()} BIC-cherry+expansion explains wBMG, by number of species")
     ax.spines[["top", "right"]].set_visible(False)
-    for i, v in enumerate(successRate):
-        ax.text(i, v + 1.5, f"{v:.0f}%", ha="center", va="bottom", fontsize=9)
+    ax.grid(axis="y", alpha=0.25)
+    ax.legend(frameon=False, title="Species")
 
     fig.tight_layout()
     outPath.parent.mkdir(parents=True, exist_ok=True)
