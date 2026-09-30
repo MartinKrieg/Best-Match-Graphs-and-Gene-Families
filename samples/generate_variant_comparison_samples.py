@@ -58,8 +58,7 @@ def bucketNameFor(R0: int, variantLabel: str):
 
 
 def _sharedDraw(numSpecies: int, seed: int):
-    """The part that is identical for both variants: gene tree, BMG, target
-    and the base BIC-cherry network. Built once per draw and reused."""
+    """The part that is identical for both variants."""
     random.seed(seed)
     np.random.seed(seed)
 
