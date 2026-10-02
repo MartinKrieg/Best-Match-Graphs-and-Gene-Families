@@ -27,7 +27,7 @@ Group members: Martin Krieg, Dennis Schiese, Ivan Bondarenko
 
 ## Installation
 
-Python 3.13. From the project directory:
+From the project directory:
 
 ```bash
 python -m venv venv
