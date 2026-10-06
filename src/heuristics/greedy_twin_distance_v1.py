@@ -5,7 +5,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import networkx as nx
 
-from src import _try_contract, _try_move_edge, removingRedundantVertices
+from src import removingRedundantVertices
+from src.editing_operations import _tryContract, _tryMoveEdge
 
 
 def twinDistance(N: nx.DiGraph, first, second) -> int:
@@ -77,9 +78,9 @@ def pairMoves(N: nx.DiGraph, first, second) -> list:
 def applyMove(N: nx.DiGraph, move, originBmg: nx.DiGraph, original_leaves: set) -> bool:
   if move[0] == "pull":
     _, tail, head, newTail, newHead = move
-    return _try_move_edge(N, tail, head, newTail, newHead, originBmg, original_leaves)
+    return _tryMoveEdge(N, tail, head, newTail, newHead, originBmg, original_leaves)
   _, node = move
-  return _try_contract(N, node, originBmg, original_leaves)
+  return _tryContract(N, node, originBmg, original_leaves)
 
 
 def bestPairMove(N: nx.DiGraph, first, second, originBmg: nx.DiGraph, original_leaves: set):
@@ -141,11 +142,11 @@ def tryFlatten(N: nx.DiGraph, node, originBmg: nx.DiGraph, original_leaves: set)
   backup = N.copy()
 
   for child in list(N.successors(node))[:-1]:
-    if not _try_move_edge(N, node, child, parent, child, originBmg, original_leaves):
+    if not _tryMoveEdge(N, node, child, parent, child, originBmg, original_leaves):
       _restore(N, backup)
       return False
 
-  if not _try_contract(N, node, originBmg, original_leaves):
+  if not _tryContract(N, node, originBmg, original_leaves):
     _restore(N, backup)
     return False
 

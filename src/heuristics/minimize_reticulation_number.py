@@ -11,7 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import networkx as nx
 
-from src import _try_move_edge, cleanUpDummyVertices, removingRedundantVertices
+from src import cleanUpDummyVertices, removingRedundantVertices
+from src.editing_operations import _tryMoveEdge
 from samples.generate_bucketed_samples import loadBucket
 
 def score(N: nx.DiGraph):
@@ -53,7 +54,7 @@ def bestPullUpCleanup(N: nx.DiGraph, originBmg: nx.DiGraph, original_leaves: set
 
   for u, v, new_u, new_v in allPullUpMoves(N):
     candidate = N.copy()
-    if not _try_move_edge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
+    if not _tryMoveEdge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
       continue
 
     cleanup(candidate, originBmg, original_leaves)
@@ -73,7 +74,7 @@ def anyPullUpCleanup(N: nx.DiGraph, originBmg: nx.DiGraph, original_leaves: set,
   """Selects an arbitrary pull-up move that was not already tried; fallback mechanism."""
   for u, v, new_u, new_v in allPullUpMoves(N):
     candidate = N.copy()
-    if not _try_move_edge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
+    if not _tryMoveEdge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
       continue
 
     cleanup(candidate, originBmg, original_leaves)
@@ -130,7 +131,7 @@ def bestPullDownCleanup(N: nx.DiGraph, originBmg: nx.DiGraph, original_leaves: s
 
   for u, v, new_u, new_v in allPullDownMoves(N):
     candidate = N.copy()
-    if not _try_move_edge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
+    if not _tryMoveEdge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
       continue
 
     cleanup(candidate, originBmg, original_leaves)
@@ -147,7 +148,7 @@ def anyPullDownCleanup(N: nx.DiGraph, originBmg: nx.DiGraph, original_leaves: se
   """Equivalent to anyPullUpCleanup, over allPullDownMoves instead."""
   for u, v, new_u, new_v in allPullDownMoves(N):
     candidate = N.copy()
-    if not _try_move_edge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
+    if not _tryMoveEdge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
       continue
 
     cleanup(candidate, originBmg, original_leaves)
@@ -197,7 +198,7 @@ def bestPullCombinedCleanup(N: nx.DiGraph, originBmg: nx.DiGraph, original_leave
 
   for u, v, new_u, new_v in allPullCombinedMoves(N):
     candidate = N.copy()
-    if not _try_move_edge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
+    if not _tryMoveEdge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
       continue
 
     cleanup(candidate, originBmg, original_leaves)
@@ -213,7 +214,7 @@ def anyPullCombinedCleanup(N: nx.DiGraph, originBmg: nx.DiGraph, original_leaves
   """Fallback for pullcombined, when no move reduced r."""
   for u, v, new_u, new_v in allPullCombinedMoves(N):
     candidate = N.copy()
-    if not _try_move_edge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
+    if not _tryMoveEdge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
       continue
 
     cleanup(candidate, originBmg, original_leaves)

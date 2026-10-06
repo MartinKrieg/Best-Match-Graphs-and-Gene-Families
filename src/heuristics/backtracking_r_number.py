@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import networkx as nx
 
-from src import _try_move_edge
+from src.editing_operations import _tryMoveEdge
 from src.heuristics.minimize_reticulation_number import allPullCombinedMoves, cleanup, score
 from src.heuristics.greedy_twin_distance_v1 import flattenAll
 
@@ -39,7 +39,7 @@ def _rankedCandidates(N: nx.DiGraph, originBmg: nx.DiGraph, original_leaves: set
   ranked = []
   for u, v, new_u, new_v in allPullCombinedMoves(N):
     candidate = N.copy()
-    if not _try_move_edge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
+    if not _tryMoveEdge(candidate, u, v, new_u, new_v, originBmg, original_leaves):
       continue
     cleanup(candidate, originBmg, original_leaves)
 
